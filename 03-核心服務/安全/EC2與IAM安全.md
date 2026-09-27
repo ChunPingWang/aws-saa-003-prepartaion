@@ -50,3 +50,36 @@ Domain 1（安全）佔 **30%**，是最大單一區塊。這篇處理「**工�
 | **多帳號治理與稽核** | [[治理與合規]] | Organizations 與 SCP 的精確邊界、Config vs CloudTrail vs CloudWatch、Systems Manager（Session Manager、Parameter Store）、AWS Backup Vault Lock |
 
 參考 [[03 官方資源清單]]；返回 [[服務關聯總圖]]、[[00 考試總覽]]。
+
+---
+
+## 🎯 考點速記
+
+看到 `403 AccessDenied` → 查 IAM → 資源 policy → endpoint policy → SCP → **KMS**
+看到 access key 出現在程式碼/AMI/user data → **一律排除該選項**
+看到 `cross-account` → **兩邊都要設定**（trust policy + 來源的 AssumeRole 權限）
+看到 `third-party vendor assumes my role` → **External ID**
+看到 `EC2 needs to call AWS API` → **instance profile + role**
+看到 `SSE-KMS 物件讀不到` → 需要 **`kms:Decrypt`**，不只 `s3:GetObject`
+
+## 💣 真實場景陷阱
+
+- **instance profile 更新後舊憑證仍在快取**：metadata 服務的臨時憑證有有效期，換 role 後不一定立即生效。
+- **IMDSv1 的 SSRF 風險**：應強制 IMDSv2（token 機制）。題目提到「防止透過應用漏洞竊取實例憑證」時會考。
+- **把權限加在 identity policy 卻忘了 bucket policy 的 explicit Deny**：任何一層的明確 Deny 都會勝出。
+- **服務連結角色（service-linked role）不能隨意刪改**，由服務自己管理。
+
+## ✍️ 自我檢核
+
+1. EC2 取得 AWS API 權限的完整鏈路是什麼？（從實例到 API 呼叫）
+2. 「EC2 連不到 S3」的三個診斷問題依序是什麼？
+3. trust policy 與 permissions policy 各決定什麼？跨帳號為什麼要兩邊設定？
+4. SSE-KMS 加密的物件，讀取需要哪兩層授權？
+5. 有哪些選項一看到就可以直接排除？
+
+> [!success]- 參考答案
+> 1. `EC2 instance → instance profile → IAM role → STS 臨時憑證（經 metadata 服務）→ 簽署 AWS API 請求`。全程沒有長期金鑰。
+> 2. **① 網路通嗎**（DNS / route / endpoint）**② 身分與 bucket policy 允許 `s3:GetObject` 嗎 ③ 若是 SSE-KMS，KMS 權限夠嗎**。注意第一題的症狀是 timeout，後兩題是 403。
+> 3. **trust policy 決定「誰可以 assume 這個 role」**；**permissions policy 決定「assume 之後能做什麼」**。跨帳號時目標帳號要在 trust policy 信任來源 principal，**且**來源帳號的 IAM policy 要允許 `sts:AssumeRole`——只設一邊不會通。
+> 4. **`s3:GetObject`**（對 S3）與 **`kms:Decrypt`**（對該 CMK）。這是「網路通了還是 403」最常見的第三個原因。
+> 5. 把 **access key 放進程式碼 / 環境變數 / AMI / user data**；為終端使用者建 **IAM user**；用 **`AdministratorAccess`** 解決權限問題；給 EKS **節點** role 而不是給 Pod。

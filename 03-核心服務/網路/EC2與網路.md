@@ -149,3 +149,39 @@ flowchart TD
 **VPC Flow Logs** 記錄 ENI 層級的連線中繼資料（來源、目的、端口、**ACCEPT/REJECT**），可送到 CloudWatch Logs、S3 或 Firehose。**不含封包內容**。詳見 [[威脅偵測與邊界防護]]。
 
 參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
+
+---
+
+## 🎯 考點速記
+
+看到 `Timeout` → **網路問題**（DNS → route → SG → NACL → 目標）
+看到 `403 AccessDenied` → **權限問題**（IAM → 資源 policy → endpoint policy → SCP → KMS）
+看到 `private access to S3/DynamoDB` → **gateway endpoint（免費）**
+看到其他 AWS API 要私有存取 → **interface endpoint**
+看到 `IPv6` + `outbound only` → **egress-only IGW**（不是 NAT）
+看到 `transitive routing` / `hundreds of VPCs` → **Transit Gateway**
+看到 `overlapping CIDR` / `expose one service` → **PrivateLink**
+看到 NAT 帳單高且流量去 S3 → **改用 gateway endpoint**
+
+## 💣 真實場景陷阱
+
+- **單一 NAT gateway 是隱藏的單點故障**：所有 AZ 的私有子網都指向它時，該 AZ 故障會讓整個環境斷網。每 AZ 一個，且路由指向自己 AZ 的 NAT。
+- **NACL 是 stateless 的**：只開入站不開回程的 ephemeral port（1024–65535）會造成「送得出去收不回來」，症狀是 timeout 而非拒絕。
+- **interface endpoint 的 private DNS 需要 VPC 開啟 `enableDnsSupport` 與 `enableDnsHostnames`**，否則 SDK 仍會解析到公開端點。
+- **CIDR 規劃時沒預留**：VPC 之間 CIDR 重疊後就無法 Peering 或用 TGW 互通，只能改用 PrivateLink 或重建。
+- **`/24` 只有 251 個可用 IP**（AWS 保留 5 個），容器密集的 subnet 很容易 IP 耗盡。
+
+## ✍️ 自我檢核
+
+1. `Timeout` 與 `403` 各代表哪一層的問題？各自的檢查順序？
+2. gateway endpoint 支援哪些服務？為什麼 on-prem 經 DX 存取 S3 不能用它？
+3. IPv6 的私有資源要「只出不進」用什麼？為什麼不是 NAT gateway？
+4. A-B 與 B-C 都建了 VPC Peering，A 能連到 C 嗎？要怎麼做才行？
+5. NAT gateway 的高可用與成本，為什麼是同一個設計決策？
+
+> [!success]- 參考答案
+> 1. **Timeout = 網路層**（DNS → route table → SG 出站/目標入站 → NACL 雙向含 ephemeral port → 目標服務是否在聽）。**403 = 權限層**（IAM identity policy → 資源 policy → VPC endpoint policy → SCP → KMS 解密權限）。
+> 2. **只有 S3 和 DynamoDB**。gateway endpoint 只是**VPC 路由表裡的一筆路由**，只在 VPC 內生效；從 on-prem 經 DX 進來的流量不走那張表。正解是 **S3 interface endpoint** 或 **Public VIF**。
+> 3. **Egress-Only Internet Gateway**。**NAT 只處理 IPv4**——IPv6 沒有位址短缺問題所以沒有 NAT。
+> 4. **不能**。VPC Peering **不支援遞移路由**。要嘛 A-C 再建一條 peering，要嘛改用 **Transit Gateway**。
+> 5. 因為**每 AZ 一個 NAT** 同時達成兩件事：**① 消除單一 AZ 故障導致全環境斷網 ② 避免私有子網流量跨 AZ 到別的 NAT 而產生跨 AZ 傳輸費**。

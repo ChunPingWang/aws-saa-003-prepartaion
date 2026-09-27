@@ -111,3 +111,40 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 | 本地應用要繼續用 NFS/SMB/iSCSI，資料放雲端 | **Storage Gateway**（見 [[遷移與混合雲]]） |
 
 參考 [[03 官方資源清單]]；返回 [[服務關聯總圖]]、[[00 考試總覽]]。
+
+---
+
+## 🎯 考點速記
+
+看到 `POSIX` / `shared directory` / `NFS` → **EFS**（**不是 S3**）
+看到 `Windows` / `SMB` / `Active Directory` → **FSx for Windows**
+看到 `HPC` / `ML training` / `parallel file system` → **FSx for Lustre**
+看到 `multi-protocol`（NFS+SMB+iSCSI）→ **FSx for NetApp ONTAP**
+看到 `large sequential` + 成本敏感 + 非開機碟 → **st1（HDD）**
+看到 `increase IOPS without increasing size` → **gp3**
+看到 `highest IOPS / critical database` → **io2**
+看到 `temporary` / `can be regenerated` / 最高 IOPS → **instance store**
+看到 `on-prem app must keep using NFS/SMB/iSCSI` → **Storage Gateway**
+
+## 💣 真實場景陷阱
+
+- **EBS Multi-Attach 不是共享檔案系統**：掛一般 ext4/XFS 到兩台實例會**毀損資料**，必須用 cluster-aware 檔案系統（如 GFS2），且僅限 io1/io2、同一 AZ。
+- **既有 volume 無法就地加密**：必須 snapshot → 複製 snapshot 時加密 → 由該 snapshot 建新 volume。
+- **root volume 的 Delete on termination 預設為 true**，額外掛載的 volume 預設為 false。實務上刪了實例才發現資料沒了。
+- **EFS 的 API endpoint 不是 NFS mount target**：兩者是不同路徑，把 interface endpoint 當 mount target 用會連不上。
+- **跨 AZ 掛載 EFS 會產生跨 AZ 流量費**，高吞吐場景要納入成本評估。
+
+## ✍️ 自我檢核
+
+1. 五種儲存（EBS / instance store / EFS / FSx / S3）各用一句話說出存取介面與典型情境。
+2. 為什麼 EBS Multi-Attach 不能當成 EFS 的替代方案？列出三個限制。
+3. 「提高 IOPS 但不想加大容量」——gp2 做得到嗎？為什麼？
+4. 既有的未加密 EBS volume 要加密，完整步驟是什麼？
+5. st1 與 sc1 有什麼共同限制？什麼題幹會暗示可以用它們？
+
+> [!success]- 參考答案
+> 1. **EBS**=區塊裝置、單一實例持久磁碟；**instance store**=主機本地區塊、暫存可重建；**EFS**=NFS、多台 Linux 跨 AZ 共享 POSIX；**FSx**=託管檔案系統（Windows SMB / Lustre HPC / ONTAP 多協定）；**S3**=物件 API、靜態資產與資料湖。
+> 2. **① 僅 io1/io2 ② 僅同一 AZ（不能跨 AZ）③ 需要 cluster-aware 檔案系統**，最多 16 台。一般檔案系統會毀損資料。
+> 3. **做不到**。gp2 的 IOPS 綁定容量（3 IOPS/GB），只能靠加大容量提升。**gp3 的 IOPS 與吞吐量可獨立調整**。
+> 4. **建立 snapshot → 複製該 snapshot 並在複製時指定加密 → 由加密的 snapshot 建立新 volume → 換掛到實例。** 無法就地啟用。
+> 5. 兩者都是 HDD，**不能作為開機磁碟**。題幹說「這些 volume 不作為開機碟」或強調「大型循序讀寫 + 成本最低」就是在暗示 HDD。

@@ -99,3 +99,38 @@ DNS 的切換速度受 **TTL** 與**各層 resolver/瀏覽器快取**限制。�
 WAF 的掛載位置與 DDoS 分層：[[威脅偵測與邊界防護]]；跨 Region 切換與資料同步的落差：[[高可用備援與災難復原]]；edge 運算選型：[[運算與容器選型]]。
 
 參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
+
+---
+
+## 🎯 考點速記
+
+看到 `lowest latency` → **Latency-based routing**
+看到 `data residency` / `regulatory` / 語言 → **Geolocation routing**
+看到 `A/B testing` / `canary` / `10% of traffic` → **Weighted routing**
+看到根網域指向 ALB/CloudFront → **Alias record**（CNAME 不行）
+看到 `static anycast IP` 或 `秒級切換不受 DNS 影響` → **Global Accelerator**
+看到 `cacheable content` / `reduce origin load` → **CloudFront**
+看到 `keep S3 origin private` → **OAC**
+看到 CloudFront 的憑證 → **必須在 us-east-1**
+
+## 💣 真實場景陷阱
+
+- **DNS failover 不等於資料已同步**：Route 53 把流量切到第二 Region，但那邊的資料庫可能落後數分鐘。切換機制與資料複寫是兩件事。
+- **TTL 沒調低就談秒級切換**：客戶端與各層 resolver 會快取到 TTL 到期。真的要秒級請用 Global Accelerator。
+- **CloudFront 快取了不該快取的東西**：未正確設定 cache key（忽略了 Authorization header 或 query string）會把 A 使用者的內容送給 B。
+- **誤以為動態內容不該用 CloudFront**：即使不快取，走 AWS 骨幹到 origin 仍降低延遲，並提供 TLS 終止與 WAF 掛載點。
+
+## ✍️ 自我檢核
+
+1. Route 53 的七種 routing policy，各在什麼題幹關鍵字下是正解？
+2. Latency-based 與 Geolocation 的根本差別是什麼？哪一個會在「合規」題出現？
+3. `example.com` 要指向 ALB，為什麼不能用 CNAME？
+4. CloudFront 與 Global Accelerator 的三個分界點？
+5. 為什麼「DNS failover 完成」不代表「災難復原完成」？
+
+> [!success]- 參考答案
+> 1. Simple（無條件）、**Weighted**（canary/A-B）、**Latency**（效能）、**Failover**（active-passive）、**Geolocation**（合規/語言）、Geoproximity（bias 調流量重心）、Multivalue（最多 8 筆健康記錄）、IP-based（依來源 CIDR）。
+> 2. **Latency = 誰快去誰那（效能導向）；Geolocation = 誰在哪去哪（合規導向）。** 出現 `data residency`、`must be served from EU` 就是 **Geolocation**，即使那不是延遲最低的 Region。
+> 3. **DNS 標準禁止 CNAME 用於 zone apex（根網域）**。Route 53 的 **Alias record** 是專有擴充，可以用在 apex，而且查詢免費、能評估目標健康狀態。
+> 4. **可快取 HTTP → CloudFront**；**非 HTTP 協定 / 需要固定 anycast IP / 需要不受 DNS 快取影響的秒級切換 → Global Accelerator**。
+> 5. DNS 只切**流量入口**，不處理**資料**。第二 Region 的資料可能因為非同步複寫而落後（RPO），應用也可能還沒預先部署（RTO）。切換機制、資料同步、環境就緒是三件獨立的事。

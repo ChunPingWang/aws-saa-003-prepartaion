@@ -91,3 +91,39 @@ flowchart LR
 這張圖對應考試中一整類題目：**「已經開啟 Auto Scaling 但效能仍然不佳」**。答案永遠不是「再加更多 EC2」，而是找出真正的瓶頸層。見 [[資料庫與快取]]、[[事件驅動與無伺服器]]。
 
 參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
+
+---
+
+## 🎯 考點速記
+
+看到 `static IP for firewall allowlist` → **NLB**（ALB 沒有靜態 IP）
+看到 `SQL injection` / `XSS` → 需要 **WAF** → 必須是 **ALB** 或前置 **CloudFront**（掛不上 NLB）
+看到 `third-party firewall appliance` → **GWLB**
+看到 `users logged out after scaling` → **session 外部化**（次佳解才是 sticky session）
+看到 `app crashed but ASG did not replace` → **health check type 改 ELB**
+看到 `in-flight requests dropped during deployment` → **deregistration delay**
+看到 `uneven load across AZs` → **開啟 cross-zone**（NLB 預設關閉）
+看到 `app takes 10 minutes to start` → **warm pool** 或 **predictive scaling**
+看到 `capture logs before termination` → **lifecycle hook**
+
+## 💣 真實場景陷阱
+
+- **健康檢查路徑需要驗證**：`/actuator/health` 若被 Spring Security 擋住，target 永遠 unhealthy，ASG 會無限替換實例。健康檢查端點必須免驗證。
+- **ASG 與 ALB 的職責混淆**：ALB 只會「停止導流」，**替換實例是 ASG 的事**。兩者的健康檢查是分開設定的。
+- **scale-in 殺掉正在處理請求的實例**：要同時設 deregistration delay（ALB 端）與 lifecycle hook（ASG 端）。
+- **NLB 開 cross-zone 會產生跨 AZ 流量費**，而 ALB 的 cross-zone 免費。成本題可能考這個不對稱。
+
+## ✍️ 自我檢核
+
+1. ALB、NLB、GWLB 各在哪一層？哪一個有靜態 IP？哪一個能掛 WAF？
+2. 應用當掉但 OS 還活著，ASG 為什麼沒有替換？怎麼修？
+3. 「使用者擴縮後被登出」有三個層次的解法，各是什麼？什麼條件下 sticky session 才是正解？
+4. cross-zone load balancing 在 ALB 與 NLB 的預設值與費用有何不同？
+5. 「已經開了 Auto Scaling 但效能還是不好」，列出四種可能的瓶頸層。
+
+> [!success]- 參考答案
+> 1. ALB=**L7**、NLB=**L4**、GWLB=**L3**。**只有 NLB 有靜態 IP**（每 AZ 一個，可指定 EIP）。**WAF 掛不上 NLB**，可掛 ALB / CloudFront / API Gateway / AppSync / Cognito UP / App Runner / Verified Access。
+> 2. health check type **預設是 `EC2`**，只看 instance status check（硬體與 OS 層）。改成 **`ELB`** 後 ASG 才會依 target group 健康狀態替換。
+> 3. 最佳=**session 外部化到 ElastiCache/DynamoDB**；可行=**sticky session**（節點故障仍會掉）；錯誤=存本機磁碟或 EFS。題目強調 `minimal changes to the application` 時 sticky session 才是正解。
+> 4. **ALB 預設開啟且免費**；**NLB 預設關閉**，開啟後跨 AZ 流量要計費。
+> 5. **運算**（加機器有效）、**資料庫寫入**（垂直擴展或改 DynamoDB/分片）、**資料庫讀取**（Read Replica 或快取）、**靜態內容頻寬**（CloudFront）、**後端處理速度**（SQS 解耦 + worker ASG）。
