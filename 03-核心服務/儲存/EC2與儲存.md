@@ -26,6 +26,11 @@ EC2 是運算主機；儲存選型同時決定存取介面、生命週期、AZ �
 | S3 | Object API/HTTP，非原生 POSIX 磁碟 | 多應用經 API 存取，bucket/資料跨 AZ（依 storage class） | 靜態物件、備份、媒體與資料湖；應用改用 object semantics |
 | FSx | 受管檔案系統，依類型選 SMB/NFS 等 | 按 FSx 類型與部署模式 | 需要 Windows SMB 或特定檔案系統能力時評估 |
 
+---
+
+# 🧠 技術層
+*它實際上怎麼運作——心智模型、機制、限制。**第一輪只讀這一層**，先把架構直覺建立起來。*
+
 ## 關聯 1：EC2 → EBS → Snapshot → 恢復
 
 EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於支援的 AZ 建新 volume；跨 Region 需複製 snapshot。Snapshot 儲存於 AWS 管理的 S3，但不是你可用一般 S3 bucket API 瀏覽的物件。快照不是「資料庫交易一致性」的同義詞；需要時配合應用凍結/資料庫備份。AMI 可包含用於建立 root volume 的 EBS snapshots；AMI 與資料庫備份目的不同。
@@ -38,18 +43,7 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 
 用 SDK/API 對 S3 存取，不要把它想成 EBS。需同時考慮 IAM role、bucket policy、S3 endpoint/出網路徑、KMS 權限；詳見 [[EC2與IAM安全]]、[[S3與資料生命週期]]。
 
-## 情境題
-
-1. 單一 EC2 的資料庫需要持久 block I/O → EBS；再評估是否直接用 RDS。
-2. 兩個 AZ 的 Linux web nodes 共享上傳檔 → EFS；若只是圖片物件，S3 也可能更合適。
-3. 可重新產生、追求暫存速度 → instance store；設計節點失效時重建。
-4. 備份 EC2 OS volume → EBS snapshot/AMI；若要應用資料跨 Region 恢復，檢查快照複製與 RPO/RTO。
-
----
-
-# 深化
-
-## EBS volume 類型（效能題必考）
+## EBS volume 類型
 
 | 類型 | 介質 | 特性 | 何時選 |
 |---|---|---|---|
@@ -64,7 +58,7 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 > **「大量循序掃描的巨量資料、成本敏感」** → **st1**（HDD 在循序吞吐上比 SSD 划算）。注意 **HDD 類型不能作為開機磁碟**。
 > **「想提升效能但不想加大容量」** → **gp3**（gp2 做不到）。
 
-## EBS 的其他考點
+## EBS 的其他機制
 
 - **Multi-Attach**：僅 **io1/io2**，同一 AZ、最多 16 台實例，且**需要 cluster-aware 檔案系統**（如 GFS2）。**一般 ext4/XFS 掛兩台會壞資料**——這不是共享檔案系統的替代方案。
 - **加密**：建立時啟用。**既有未加密 volume → snapshot → 複製 snapshot 時加密 → 由該 snapshot 建新 volume**。無法就地加密。加密的 snapshot 複製到其他 Region 時要注意目的地 Region 的 KMS key（見 [[威脅偵測與邊界防護]]）。
@@ -85,7 +79,7 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 > **EFS = Linux / NFS**。跨 AZ、自動擴展、無容量規劃。
 > 題幹出現 **Windows**、**SMB**、**Active Directory 整合** → **FSx for Windows File Server**，不是 EFS。
 
-## FSx 四種類型（原表只寫「依類型選」，這裡展開）
+## FSx 四種類型
 
 | 類型 | 協定 | 題幹關鍵字 |
 |---|---|---|
@@ -110,9 +104,19 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 | 暫存、可重建、要最高 IOPS | **Instance store** |
 | 本地應用要繼續用 NFS/SMB/iSCSI，資料放雲端 | **Storage Gateway**（見 [[遷移與混合雲]]） |
 
-參考 [[03 官方資源清單]]；返回 [[服務關聯總圖]]、[[00 考試總覽]]。
+### 四個典型場景的完整推理
+
+上表是查表用的；實務與考題還要多想一層：
+
+1. 單一 EC2 的資料庫需要持久 block I/O → EBS；再評估是否直接用 RDS。
+2. 兩個 AZ 的 Linux web nodes 共享上傳檔 → EFS；若只是圖片物件，S3 也可能更合適。
+3. 可重新產生、追求暫存速度 → instance store；設計節點失效時重建。
+4. 備份 EC2 OS volume → EBS snapshot/AMI；若要應用資料跨 Region 恢復，檢查快照複製與 RPO/RTO。
 
 ---
+
+# 🎯 考試層
+*考試會怎麼問——關鍵字反射、誘答陷阱、閉卷檢核。**第二輪與考前讀這一層**。*
 
 ## 🎯 考點速記
 
@@ -148,3 +152,9 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 > 3. **做不到**。gp2 的 IOPS 綁定容量（3 IOPS/GB），只能靠加大容量提升。**gp3 的 IOPS 與吞吐量可獨立調整**。
 > 4. **建立 snapshot → 複製該 snapshot 並在複製時指定加密 → 由加密的 snapshot 建立新 volume → 換掛到實例。** 無法就地啟用。
 > 5. 兩者都是 HDD，**不能作為開機磁碟**。題幹說「這些 volume 不作為開機碟」或強調「大型循序讀寫 + 成本最低」就是在暗示 HDD。
+
+---
+
+# 🔗 相關
+
+參考 [[03 官方資源清單]]；返回 [[服務關聯總圖]]、[[00 考試總覽]]。

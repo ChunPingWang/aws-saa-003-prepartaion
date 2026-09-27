@@ -27,11 +27,13 @@ ASG 的目標追蹤可依 CPU、ALB request count per target 或自訂指標擴�
 
 Spring Boot 練習：`/actuator/health/readiness` 作 target health check；單一節點故障時，ALB 停止導流、ASG 補節點。不要將 session 或上傳檔只放在本機磁碟；改用外部 session store/物件儲存。詳見 [[EC2與儲存]]。
 
+
 ---
 
-# 深化
+# 🧠 技術層
+*它實際上怎麼運作——心智模型、機制、限制。**第一輪只讀這一層**，先把架構直覺建立起來。*
 
-## 三種 ELB（原表缺 GWLB）
+## 三種 ELB
 
 | | **ALB** | **NLB** | **GWLB** |
 |---|---|---|---|
@@ -48,7 +50,7 @@ Spring Boot 練習：`/actuator/health/readiness` 作 target health check；單�
 > 「要擋 **SQL injection / XSS**」→ 需要 **WAF** → 必須是 **ALB**（或前面加 CloudFront）。**WAF 掛不上 NLB**。
 > 「要把流量導到**第三方資安虛擬設備**做檢查後再放行」→ **Gateway Load Balancer**。
 
-## ELB 的六個進階設定（考題常拿來當正解）
+## ELB 的六個進階設定
 
 | 設定 | 作用 | 題幹關鍵字 |
 |---|---|---|
@@ -90,9 +92,10 @@ flowchart LR
 
 這張圖對應考試中一整類題目：**「已經開啟 Auto Scaling 但效能仍然不佳」**。答案永遠不是「再加更多 EC2」，而是找出真正的瓶頸層。見 [[資料庫與快取]]、[[事件驅動與無伺服器]]。
 
-參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
-
 ---
+
+# 🎯 考試層
+*考試會怎麼問——關鍵字反射、誘答陷阱、閉卷檢核。**第二輪與考前讀這一層**。*
 
 ## 🎯 考點速記
 
@@ -127,3 +130,9 @@ flowchart LR
 > 3. 最佳=**session 外部化到 ElastiCache/DynamoDB**；可行=**sticky session**（節點故障仍會掉）；錯誤=存本機磁碟或 EFS。題目強調 `minimal changes to the application` 時 sticky session 才是正解。
 > 4. **ALB 預設開啟且免費**；**NLB 預設關閉**，開啟後跨 AZ 流量要計費。
 > 5. **運算**（加機器有效）、**資料庫寫入**（垂直擴展或改 DynamoDB/分片）、**資料庫讀取**（Read Replica 或快取）、**靜態內容頻寬**（CloudFront）、**後端處理速度**（SQS 解耦 + worker ASG）。
+
+---
+
+# 🔗 相關
+
+參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。

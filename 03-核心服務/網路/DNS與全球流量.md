@@ -25,9 +25,11 @@ updated: 2026-09-27
 
 常見陷阱：CloudFront 能快取並降低 origin load；Global Accelerator 不是 CDN 物件快取。Route 53 只處理名稱解析與策略，不取代資料平面中的 ALB。ACM 憑證與 WAF 的關聯依受支援服務及部署位置安排；見 [[EC2與IAM安全]]。
 
+
 ---
 
-# 深化
+# 🧠 技術層
+*它實際上怎麼運作——心智模型、機制、限制。**第一輪只讀這一層**，先把架構直覺建立起來。*
 
 ## Route 53 的七種 routing policy
 
@@ -49,7 +51,7 @@ updated: 2026-09-27
 > **Geolocation = 誰在哪去哪**（合規/法規/語言導向）。
 > 題幹出現 `data residency`、`regulatory requirement`、`must be served content in their language` → **Geolocation**，即使那不是延遲最低的 Region。
 
-## Alias record vs CNAME（必考）
+## Alias record vs CNAME
 
 | | Alias（Route 53 專有） | CNAME |
 |---|---|---|
@@ -94,13 +96,10 @@ DNS 的切換速度受 **TTL** 與**各層 resolver/瀏覽器快取**限制。�
 | 需要**秒級**跨 Region failover、不受 DNS 快取影響 | **Global Accelerator** |
 | 靜態網站 + S3 | **CloudFront** |
 
-## 與其他筆記的接點
-
-WAF 的掛載位置與 DDoS 分層：[[威脅偵測與邊界防護]]；跨 Region 切換與資料同步的落差：[[高可用備援與災難復原]]；edge 運算選型：[[運算與容器選型]]。
-
-參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
-
 ---
+
+# 🎯 考試層
+*考試會怎麼問——關鍵字反射、誘答陷阱、閉卷檢核。**第二輪與考前讀這一層**。*
 
 ## 🎯 考點速記
 
@@ -134,3 +133,11 @@ WAF 的掛載位置與 DDoS 分層：[[威脅偵測與邊界防護]]；跨 Regio
 > 3. **DNS 標準禁止 CNAME 用於 zone apex（根網域）**。Route 53 的 **Alias record** 是專有擴充，可以用在 apex，而且查詢免費、能評估目標健康狀態。
 > 4. **可快取 HTTP → CloudFront**；**非 HTTP 協定 / 需要固定 anycast IP / 需要不受 DNS 快取影響的秒級切換 → Global Accelerator**。
 > 5. DNS 只切**流量入口**，不處理**資料**。第二 Region 的資料可能因為非同步複寫而落後（RPO），應用也可能還沒預先部署（RTO）。切換機制、資料同步、環境就緒是三件獨立的事。
+
+---
+
+# 🔗 相關
+
+WAF 的掛載位置與 DDoS 分層：[[威脅偵測與邊界防護]]；跨 Region 切換與資料同步的落差：[[高可用備援與災難復原]]；edge 運算選型：[[運算與容器選型]]。
+
+參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。

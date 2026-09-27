@@ -18,6 +18,11 @@ updated: 2026-09-27
 
 **VPC 是網路範圍，subnet 屬於一個 AZ；EC2 的 ENI、私有 IP 與 SG 實際承接流量。** 「public subnet」取決於關聯 route table 有通向 IGW 的路由；instance 要直接 IPv4 網際網路通訊還須適當 public IPv4/EIP 及 SG/NACL 規則。
 
+---
+
+# 🧠 技術層
+*它實際上怎麼運作——心智模型、機制、限制。**第一輪只讀這一層**，先把架構直覺建立起來。*
+
 ## 三條不同的路
 
 | 目標 | 路徑與必要條件 | 易錯點 |
@@ -36,15 +41,6 @@ SG 關聯至網路介面，**stateful、只列允許規則**；NACL 在 subnet �
 - 消費對方提供的單一服務而非整網互通：PrivateLink。
 - on-prem 加密連線：Site-to-Site VPN；專用連線需求：Direct Connect，並另思考備援/加密。
 
-## 自問
-
-EC2 在 private subnet 為何 `curl` 外網失敗？依序檢查 DNS、route、NAT/endpoint、SG egress、NACL 雙向、目標是否允許。若是 AWS API 403，網路可能已通，繼續查 IAM/resource/endpoint/KMS policy。
-
-連到 [[EC2與負載平衡及擴展]]、[[DNS與全球流量]]、[[成本與可觀測性]]；參考 [[03 官方資源清單]]。
-
----
-
-# 深化
 
 ## CIDR 與 subnet 規劃
 
@@ -53,7 +49,7 @@ EC2 在 private subnet 為何 `curl` 外網失敗？依序檢查 DNS、route、N
 - **Subnet 屬於單一 AZ，不能跨 AZ**；VPC 跨整個 Region。
 - 規劃時預留 CIDR 不重疊，否則將來無法做 **VPC Peering** 或 **Transit Gateway** 連通。
 
-## IPv6 與出站（原筆記未涵蓋）
+## IPv6 與「只出不進」
 
 | 需求 | IPv4 | IPv6 |
 |---|---|---|
@@ -122,7 +118,7 @@ PrivateLink 解決的是「**我要消費對方提供的一個服務，但不想
 - **Route 53 Private Hosted Zone**：在 VPC 內解析私有網域名稱。
 - 混合環境的 DNS 轉發（inbound/outbound Resolver endpoint）見 [[遷移與混合雲]]。
 
-## 排錯決策樹（把原有「自問」段落結構化）
+## 排錯決策樹
 
 ```mermaid
 flowchart TD
@@ -148,9 +144,10 @@ flowchart TD
 
 **VPC Flow Logs** 記錄 ENI 層級的連線中繼資料（來源、目的、端口、**ACCEPT/REJECT**），可送到 CloudWatch Logs、S3 或 Firehose。**不含封包內容**。詳見 [[威脅偵測與邊界防護]]。
 
-參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
-
 ---
+
+# 🎯 考試層
+*考試會怎麼問——關鍵字反射、誘答陷阱、閉卷檢核。**第二輪與考前讀這一層**。*
 
 ## 🎯 考點速記
 
@@ -185,3 +182,11 @@ flowchart TD
 > 3. **Egress-Only Internet Gateway**。**NAT 只處理 IPv4**——IPv6 沒有位址短缺問題所以沒有 NAT。
 > 4. **不能**。VPC Peering **不支援遞移路由**。要嘛 A-C 再建一條 peering，要嘛改用 **Transit Gateway**。
 > 5. 因為**每 AZ 一個 NAT** 同時達成兩件事：**① 消除單一 AZ 故障導致全環境斷網 ② 避免私有子網流量跨 AZ 到別的 NAT 而產生跨 AZ 傳輸費**。
+
+---
+
+# 🔗 相關
+
+連到 [[EC2與負載平衡及擴展]]、[[DNS與全球流量]]、[[成本與可觀測性]]；參考 [[03 官方資源清單]]。
+
+參考 [[03 官方資源清單]]；返回 [[00 考試總覽]]。
