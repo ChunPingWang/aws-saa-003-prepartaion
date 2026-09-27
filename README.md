@@ -99,6 +99,58 @@ pie showData
 - [[Domain 3 設計高效能架構]] — 24%｜儲存/資料庫/運算選型、瓶頸判斷
 - [[Domain 4 設計成本最佳化架構]] — 20%｜購買模式、資料傳輸、儲存類別
 
+### 考試範圍心智圖
+
+一張圖看完「SAA 到底要學什麼」。每個分支都對得上一篇筆記：
+
+```mermaid
+flowchart LR
+    ROOT(("SAA-C03"))
+
+    ROOT --> D1["🔐 D1 設計安全架構<br/>30%"]
+    ROOT --> D2["🛡️ D2 設計高韌性架構<br/>26%"]
+    ROOT --> D3["⚡ D3 設計高效能架構<br/>24%"]
+    ROOT --> D4["💰 D4 設計成本最佳化<br/>20%"]
+
+    D1 --> A1["身分與存取<br/>IAM・STS・Cognito<br/>Identity Center"]
+    D1 --> A2["資料保護<br/>KMS・ACM・Secrets<br/>S3 加密・Object Lock"]
+    D1 --> A3["邊界防護<br/>SG/NACL・WAF・Shield<br/>GuardDuty・Inspector・Macie"]
+    D1 --> A4["多帳號治理<br/>Organizations・SCP<br/>Config・CloudTrail・SSM"]
+
+    D2 --> B1["解耦與事件驅動<br/>SQS・SNS・EventBridge<br/>Step Functions"]
+    D2 --> B2["高可用<br/>多 AZ・ALB・ASG<br/>RDS Multi-AZ"]
+    D2 --> B3["災難復原<br/>RPO/RTO・四類 DR 策略<br/>跨 Region 複寫"]
+    D2 --> B4["備份與不可變<br/>AWS Backup・Vault Lock"]
+
+    D3 --> C1["儲存<br/>EBS・EFS・FSx<br/>S3・Instance Store"]
+    D3 --> C2["資料庫與快取<br/>RDS・Aurora・DynamoDB<br/>ElastiCache・DAX"]
+    D3 --> C3["運算與擴展<br/>EC2・Lambda・ECS/EKS<br/>Fargate・ASG"]
+    D3 --> C4["網路與全球流量<br/>VPC・endpoint・TGW<br/>Route 53・CloudFront"]
+    D3 --> C5["資料擷取與分析<br/>Kinesis・Firehose<br/>Athena・Glue・Redshift"]
+
+    D4 --> E1["購買模式<br/>Spot・Savings Plans<br/>RI・Dedicated Host"]
+    D4 --> E2["儲存分層<br/>Lifecycle・Glacier<br/>Intelligent-Tiering"]
+    D4 --> E3["資料傳輸<br/>gateway endpoint<br/>CloudFront・跨 AZ 流量"]
+    D4 --> E4["成本工具<br/>Budgets・Cost Explorer<br/>Compute Optimizer"]
+
+    classDef root fill:#232f3e,stroke:#131a22,color:#fff,font-weight:bold
+    classDef d1 fill:#dd344c,stroke:#a8283a,color:#fff
+    classDef d2 fill:#e7157b,stroke:#b01060,color:#fff
+    classDef d3 fill:#4d27aa,stroke:#361d77,color:#fff
+    classDef d4 fill:#01a88d,stroke:#017a66,color:#fff
+    classDef leaf fill:#f2f3f3,stroke:#879196,color:#16191f
+    class ROOT root
+    class D1 d1
+    class D2 d2
+    class D3 d3
+    class D4 d4
+    class A1,A2,A3,A4,B1,B2,B3,B4,C1,C2,C3,C4,C5,E1,E2,E3,E4 leaf
+```
+
+> [!tip] 這張圖的兩個用法
+> **第一天**：對照 [[25 天衝刺計劃]]，確認每個分支都排進了某一天。
+> **考前**：**遮住葉節點**，看著 domain 名稱能不能自己講出下面有哪些主題。講不出來的分支就是缺口。
+
 > [!important] 考試規格速記
 > **65 題（50 計分 + 15 不計分）／130 分鐘／scaled 100–1000，720 分通過／補償式計分。**
 > 平均每題 **120 秒**。未作答一律算錯，**猜題無倒扣**。詳見 [[00 考試總覽]]。
