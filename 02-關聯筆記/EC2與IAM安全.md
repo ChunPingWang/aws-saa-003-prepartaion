@@ -24,4 +24,17 @@ SCP 限制 Organizations 帳號的**權限上限**，一般不直接授予權限
 
 「EC2 連不到 S3」分成三個診斷問題：DNS/route/endpoint 是否通？身份與 bucket policy 是否允許 `s3:GetObject`？若物件使用 SSE-KMS，KMS 權限是否滿足？也參考 [[EC2與網路]] 與 [[S3與資料生命週期]]。
 
-參考 [[官方資料]]；返回 [[服務關聯總圖]]。
+> [!tip] 這三個問題的通用形式
+> **Timeout 找網路，403 找權限。** 完整的排錯決策樹（含 endpoint policy、SCP、KMS 五個權限層）整理在 [[EC2與網路]] 的深化段落。
+
+## 本篇的延伸主題
+
+Domain 1（安全）佔 **30%**，是最大單一區塊。這篇處理「**工作負載**如何取得權限」，其餘三個面向各自獨立成篇：
+
+| 面向 | 筆記 | 涵蓋 |
+|---|---|---|
+| **人與終端使用者**的身分 | [[身分聯合與應用存取]] | Cognito User Pool / Identity Pool、IAM Identity Center、Directory Service、STS 與 External ID、**IAM 權限評估流程圖** |
+| **偵測與邊界防護** | [[威脅偵測與邊界防護]] | GuardDuty / Inspector / Macie / Security Hub / Detective、WAF 與 Shield 的掛載限制、Network Firewall、**KMS 深入**、S3 五種加密選項 |
+| **多帳號治理與稽核** | [[治理與合規]] | Organizations 與 SCP 的精確邊界、Config vs CloudTrail vs CloudWatch、Systems Manager（Session Manager、Parameter Store）、AWS Backup Vault Lock |
+
+參考 [[官方資料]]；返回 [[服務關聯總圖]]、[[考試藍圖與配分]]。
