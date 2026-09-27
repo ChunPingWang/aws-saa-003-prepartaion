@@ -176,12 +176,16 @@ flowchart TD
 4. A-B 與 B-C 都建了 VPC Peering，A 能連到 C 嗎？要怎麼做才行？
 5. NAT gateway 的高可用與成本，為什麼是同一個設計決策？
 
-> [!success]- 參考答案
-> 1. **Timeout = 網路層**（DNS → route table → SG 出站/目標入站 → NACL 雙向含 ephemeral port → 目標服務是否在聽）。**403 = 權限層**（IAM identity policy → 資源 policy → VPC endpoint policy → SCP → KMS 解密權限）。
-> 2. **只有 S3 和 DynamoDB**。gateway endpoint 只是**VPC 路由表裡的一筆路由**，只在 VPC 內生效；從 on-prem 經 DX 進來的流量不走那張表。正解是 **S3 interface endpoint** 或 **Public VIF**。
-> 3. **Egress-Only Internet Gateway**。**NAT 只處理 IPv4**——IPv6 沒有位址短缺問題所以沒有 NAT。
-> 4. **不能**。VPC Peering **不支援遞移路由**。要嘛 A-C 再建一條 peering，要嘛改用 **Transit Gateway**。
-> 5. 因為**每 AZ 一個 NAT** 同時達成兩件事：**① 消除單一 AZ 故障導致全環境斷網 ② 避免私有子網流量跨 AZ 到別的 NAT 而產生跨 AZ 傳輸費**。
+<details>
+<summary>參考答案</summary>
+
+1. **Timeout = 網路層**（DNS → route table → SG 出站/目標入站 → NACL 雙向含 ephemeral port → 目標服務是否在聽）。**403 = 權限層**（IAM identity policy → 資源 policy → VPC endpoint policy → SCP → KMS 解密權限）。
+2. **只有 S3 和 DynamoDB**。gateway endpoint 只是**VPC 路由表裡的一筆路由**，只在 VPC 內生效；從 on-prem 經 DX 進來的流量不走那張表。正解是 **S3 interface endpoint** 或 **Public VIF**。
+3. **Egress-Only Internet Gateway**。**NAT 只處理 IPv4**——IPv6 沒有位址短缺問題所以沒有 NAT。
+4. **不能**。VPC Peering **不支援遞移路由**。要嘛 A-C 再建一條 peering，要嘛改用 **Transit Gateway**。
+5. 因為**每 AZ 一個 NAT** 同時達成兩件事：**① 消除單一 AZ 故障導致全環境斷網 ② 避免私有子網流量跨 AZ 到別的 NAT 而產生跨 AZ 傳輸費**。
+
+</details>
 
 ---
 

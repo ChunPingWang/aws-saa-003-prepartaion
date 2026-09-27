@@ -146,12 +146,16 @@ EBS volume 是 AZ 範圍。Snapshot 是備份機制，建立 snapshot 後可於�
 4. 既有的未加密 EBS volume 要加密，完整步驟是什麼？
 5. st1 與 sc1 有什麼共同限制？什麼題幹會暗示可以用它們？
 
-> [!success]- 參考答案
-> 1. **EBS**=區塊裝置、單一實例持久磁碟；**instance store**=主機本地區塊、暫存可重建；**EFS**=NFS、多台 Linux 跨 AZ 共享 POSIX；**FSx**=託管檔案系統（Windows SMB / Lustre HPC / ONTAP 多協定）；**S3**=物件 API、靜態資產與資料湖。
-> 2. **① 僅 io1/io2 ② 僅同一 AZ（不能跨 AZ）③ 需要 cluster-aware 檔案系統**，最多 16 台。一般檔案系統會毀損資料。
-> 3. **做不到**。gp2 的 IOPS 綁定容量（3 IOPS/GB），只能靠加大容量提升。**gp3 的 IOPS 與吞吐量可獨立調整**。
-> 4. **建立 snapshot → 複製該 snapshot 並在複製時指定加密 → 由加密的 snapshot 建立新 volume → 換掛到實例。** 無法就地啟用。
-> 5. 兩者都是 HDD，**不能作為開機磁碟**。題幹說「這些 volume 不作為開機碟」或強調「大型循序讀寫 + 成本最低」就是在暗示 HDD。
+<details>
+<summary>參考答案</summary>
+
+1. **EBS**=區塊裝置、單一實例持久磁碟；**instance store**=主機本地區塊、暫存可重建；**EFS**=NFS、多台 Linux 跨 AZ 共享 POSIX；**FSx**=託管檔案系統（Windows SMB / Lustre HPC / ONTAP 多協定）；**S3**=物件 API、靜態資產與資料湖。
+2. **① 僅 io1/io2 ② 僅同一 AZ（不能跨 AZ）③ 需要 cluster-aware 檔案系統**，最多 16 台。一般檔案系統會毀損資料。
+3. **做不到**。gp2 的 IOPS 綁定容量（3 IOPS/GB），只能靠加大容量提升。**gp3 的 IOPS 與吞吐量可獨立調整**。
+4. **建立 snapshot → 複製該 snapshot 並在複製時指定加密 → 由加密的 snapshot 建立新 volume → 換掛到實例。** 無法就地啟用。
+5. 兩者都是 HDD，**不能作為開機磁碟**。題幹說「這些 volume 不作為開機碟」或強調「大型循序讀寫 + 成本最低」就是在暗示 HDD。
+
+</details>
 
 ---
 

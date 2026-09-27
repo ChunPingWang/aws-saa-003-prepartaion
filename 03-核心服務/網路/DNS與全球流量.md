@@ -127,12 +127,16 @@ DNS 的切換速度受 **TTL** 與**各層 resolver/瀏覽器快取**限制。�
 4. CloudFront 與 Global Accelerator 的三個分界點？
 5. 為什麼「DNS failover 完成」不代表「災難復原完成」？
 
-> [!success]- 參考答案
-> 1. Simple（無條件）、**Weighted**（canary/A-B）、**Latency**（效能）、**Failover**（active-passive）、**Geolocation**（合規/語言）、Geoproximity（bias 調流量重心）、Multivalue（最多 8 筆健康記錄）、IP-based（依來源 CIDR）。
-> 2. **Latency = 誰快去誰那（效能導向）；Geolocation = 誰在哪去哪（合規導向）。** 出現 `data residency`、`must be served from EU` 就是 **Geolocation**，即使那不是延遲最低的 Region。
-> 3. **DNS 標準禁止 CNAME 用於 zone apex（根網域）**。Route 53 的 **Alias record** 是專有擴充，可以用在 apex，而且查詢免費、能評估目標健康狀態。
-> 4. **可快取 HTTP → CloudFront**；**非 HTTP 協定 / 需要固定 anycast IP / 需要不受 DNS 快取影響的秒級切換 → Global Accelerator**。
-> 5. DNS 只切**流量入口**，不處理**資料**。第二 Region 的資料可能因為非同步複寫而落後（RPO），應用也可能還沒預先部署（RTO）。切換機制、資料同步、環境就緒是三件獨立的事。
+<details>
+<summary>參考答案</summary>
+
+1. Simple（無條件）、**Weighted**（canary/A-B）、**Latency**（效能）、**Failover**（active-passive）、**Geolocation**（合規/語言）、Geoproximity（bias 調流量重心）、Multivalue（最多 8 筆健康記錄）、IP-based（依來源 CIDR）。
+2. **Latency = 誰快去誰那（效能導向）；Geolocation = 誰在哪去哪（合規導向）。** 出現 `data residency`、`must be served from EU` 就是 **Geolocation**，即使那不是延遲最低的 Region。
+3. **DNS 標準禁止 CNAME 用於 zone apex（根網域）**。Route 53 的 **Alias record** 是專有擴充，可以用在 apex，而且查詢免費、能評估目標健康狀態。
+4. **可快取 HTTP → CloudFront**；**非 HTTP 協定 / 需要固定 anycast IP / 需要不受 DNS 快取影響的秒級切換 → Global Accelerator**。
+5. DNS 只切**流量入口**，不處理**資料**。第二 Region 的資料可能因為非同步複寫而落後（RPO），應用也可能還沒預先部署（RTO）。切換機制、資料同步、環境就緒是三件獨立的事。
+
+</details>
 
 ---
 

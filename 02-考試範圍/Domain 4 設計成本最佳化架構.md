@@ -128,13 +128,17 @@ updated: 2026-09-27
 5. 「找出閒置資源」與「找出規格過大的實例」分別該用哪個工具？
 6. Budgets、Cost Explorer、CUR、Trusted Advisor 各一句話。
 
-> [!success]- 參考答案
-> 1. **先用其他所有條件（可用性、延遲、合規、不可中斷）淘汰，剩下的才比價。** 先找最便宜的會選到違反硬性條件的選項——那是題目故意放的。
-> 2. **Deep Archive 最低儲存期間 180 天**，只放 45 天仍要付滿 180 天。成本題要先檢查**最低儲存期間**，不是看單價。
-> 3. **建立 S3 gateway endpoint 並更新私有子網路由表。** gateway endpoint **免費**，而 NAT gateway 按**小時 + 處理資料量**計費；流量也不再離開 AWS 網路。
-> 4. **跨 instance family、跨 Region、跨 OS，而且涵蓋 Fargate 與 Lambda。** EC2 Instance SP 折扣稍高但鎖定 family + Region 且不含 Fargate/Lambda。
-> 5. 閒置資源 → **Trusted Advisor**（完整檢查需 Business/Enterprise Support）；規格建議 → **Compute Optimizer**。
-> 6. **Budgets = 超標告警**；**Cost Explorer = 歷史分析與預測**；**CUR = 最細帳單明細供自訂分析**；**Trusted Advisor = 五大支柱檢查與閒置資源**。
+<details>
+<summary>參考答案</summary>
+
+1. **先用其他所有條件（可用性、延遲、合規、不可中斷）淘汰，剩下的才比價。** 先找最便宜的會選到違反硬性條件的選項——那是題目故意放的。
+2. **Deep Archive 最低儲存期間 180 天**，只放 45 天仍要付滿 180 天。成本題要先檢查**最低儲存期間**，不是看單價。
+3. **建立 S3 gateway endpoint 並更新私有子網路由表。** gateway endpoint **免費**，而 NAT gateway 按**小時 + 處理資料量**計費；流量也不再離開 AWS 網路。
+4. **跨 instance family、跨 Region、跨 OS，而且涵蓋 Fargate 與 Lambda。** EC2 Instance SP 折扣稍高但鎖定 family + Region 且不含 Fargate/Lambda。
+5. 閒置資源 → **Trusted Advisor**（完整檢查需 Business/Enterprise Support）；規格建議 → **Compute Optimizer**。
+6. **Budgets = 超標告警**；**Cost Explorer = 歷史分析與預測**；**CUR = 最細帳單明細供自訂分析**；**Trusted Advisor = 五大支柱檢查與閒置資源**。
+
+</details>
 
 ## 🔗 相關
 

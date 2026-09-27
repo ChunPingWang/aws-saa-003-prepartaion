@@ -124,12 +124,16 @@ flowchart LR
 4. cross-zone load balancing 在 ALB 與 NLB 的預設值與費用有何不同？
 5. 「已經開了 Auto Scaling 但效能還是不好」，列出四種可能的瓶頸層。
 
-> [!success]- 參考答案
-> 1. ALB=**L7**、NLB=**L4**、GWLB=**L3**。**只有 NLB 有靜態 IP**（每 AZ 一個，可指定 EIP）。**WAF 掛不上 NLB**，可掛 ALB / CloudFront / API Gateway / AppSync / Cognito UP / App Runner / Verified Access。
-> 2. health check type **預設是 `EC2`**，只看 instance status check（硬體與 OS 層）。改成 **`ELB`** 後 ASG 才會依 target group 健康狀態替換。
-> 3. 最佳=**session 外部化到 ElastiCache/DynamoDB**；可行=**sticky session**（節點故障仍會掉）；錯誤=存本機磁碟或 EFS。題目強調 `minimal changes to the application` 時 sticky session 才是正解。
-> 4. **ALB 預設開啟且免費**；**NLB 預設關閉**，開啟後跨 AZ 流量要計費。
-> 5. **運算**（加機器有效）、**資料庫寫入**（垂直擴展或改 DynamoDB/分片）、**資料庫讀取**（Read Replica 或快取）、**靜態內容頻寬**（CloudFront）、**後端處理速度**（SQS 解耦 + worker ASG）。
+<details>
+<summary>參考答案</summary>
+
+1. ALB=**L7**、NLB=**L4**、GWLB=**L3**。**只有 NLB 有靜態 IP**（每 AZ 一個，可指定 EIP）。**WAF 掛不上 NLB**，可掛 ALB / CloudFront / API Gateway / AppSync / Cognito UP / App Runner / Verified Access。
+2. health check type **預設是 `EC2`**，只看 instance status check（硬體與 OS 層）。改成 **`ELB`** 後 ASG 才會依 target group 健康狀態替換。
+3. 最佳=**session 外部化到 ElastiCache/DynamoDB**；可行=**sticky session**（節點故障仍會掉）；錯誤=存本機磁碟或 EFS。題目強調 `minimal changes to the application` 時 sticky session 才是正解。
+4. **ALB 預設開啟且免費**；**NLB 預設關閉**，開啟後跨 AZ 流量要計費。
+5. **運算**（加機器有效）、**資料庫寫入**（垂直擴展或改 DynamoDB/分片）、**資料庫讀取**（Read Replica 或快取）、**靜態內容頻寬**（CloudFront）、**後端處理速度**（SQS 解耦 + worker ASG）。
+
+</details>
 
 ---
 

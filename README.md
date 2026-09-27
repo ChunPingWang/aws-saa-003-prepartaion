@@ -120,24 +120,26 @@ pie showData
 
 ---
 
-## ✅ 進度儀表板
+## ✅ 進度追蹤（不需任何外掛）
 
-> [!tip] 需要 Dataview 外掛
-> 若已安裝 Dataview，下面會自動列出所有筆記的複習狀態；沒安裝也不影響閱讀。
-
-```dataview
-TABLE status AS "狀態", confidence AS "信心(1-5)", importance AS "重要性"
-FROM "03-核心服務" OR "04-模式與決策"
-SORT confidence ASC, importance DESC
-```
-
-每篇筆記的 frontmatter 都有這三個欄位，讀完就更新：
+每篇筆記的 frontmatter 都有這三個欄位，讀完就手動更新：
 
 ```yaml
 status: 未讀 | 讀過 | 熟練
 confidence: 1     # 1=沒把握 5=可以教別人
-importance: 5     # 考試重要性，不要改
+importance: 5     # 考試重要性，已設定好，不要改
 ```
+
+**要找出還沒掌握的筆記**，用 Obsidian 內建搜尋（`⌘⇧F`）輸入：
+
+```
+confidence: 1
+```
+
+換成 `confidence: 2` 再搜一次，這兩批就是你的複習清單。
+考前的目標是：**`importance: 5` 的筆記都不能停在 confidence 1–2**。
+
+進度打勾表在 [[每日追蹤模板]]。
 
 ---
 

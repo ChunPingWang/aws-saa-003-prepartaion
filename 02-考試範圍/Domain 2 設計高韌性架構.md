@@ -106,13 +106,17 @@ updated: 2026-09-27
 5. 單一 AZ 的 NAT gateway 故障，為什麼會影響**其他** AZ 的私有子網？
 6. Lambda 非同步呼叫失敗的事件為什麼會消失？怎麼保留？
 
-> [!success]- 參考答案
-> 1. **Multi-AZ = HA（同 Region 自動切換）**；**Read Replica = 讀取擴展（非同步、不自動切換）**；**跨 Region replica / Global Database = DR**。最常被對調的是 Multi-AZ 與 Read Replica，其次是 Multi-AZ 被當成 DR。
-> 2. **先用 RTO 篩掉達不到的，再在合格者中選最便宜的。** RTO 4 小時 → pilot light 就夠；active/active 與 warm standby 雖然也達標但更貴，屬過度設計。
-> 3. `事件 → SNS topic → 三個 SQS（各一訂閱）→ 各自 worker + DLQ`。單一 SQS 做不到，因為訊息被一個消費者取走就消失。
-> 4. ASG 的 health check type **預設是 `EC2`**，只看 instance status check。要改成 **`ELB`** 才會依 target group 健康狀態替換。
-> 5. 若所有私有子網的 `0.0.0.0/0` 都指向同一個 AZ 的 NAT gateway，那個 AZ 故障就全斷。正解是**每 AZ 一個 NAT，各自路由指向自己 AZ 的 NAT**（同時省跨 AZ 傳輸費）。
-> 6. 非同步呼叫**預設只重試 2 次**，之後丟棄。要保留必須設 **DLQ** 或 **Lambda Destinations（on-failure）**。
+<details>
+<summary>參考答案</summary>
+
+1. **Multi-AZ = HA（同 Region 自動切換）**；**Read Replica = 讀取擴展（非同步、不自動切換）**；**跨 Region replica / Global Database = DR**。最常被對調的是 Multi-AZ 與 Read Replica，其次是 Multi-AZ 被當成 DR。
+2. **先用 RTO 篩掉達不到的，再在合格者中選最便宜的。** RTO 4 小時 → pilot light 就夠；active/active 與 warm standby 雖然也達標但更貴，屬過度設計。
+3. `事件 → SNS topic → 三個 SQS（各一訂閱）→ 各自 worker + DLQ`。單一 SQS 做不到，因為訊息被一個消費者取走就消失。
+4. ASG 的 health check type **預設是 `EC2`**，只看 instance status check。要改成 **`ELB`** 才會依 target group 健康狀態替換。
+5. 若所有私有子網的 `0.0.0.0/0` 都指向同一個 AZ 的 NAT gateway，那個 AZ 故障就全斷。正解是**每 AZ 一個 NAT，各自路由指向自己 AZ 的 NAT**（同時省跨 AZ 傳輸費）。
+6. 非同步呼叫**預設只重試 2 次**，之後丟棄。要保留必須設 **DLQ** 或 **Lambda Destinations（on-failure）**。
+
+</details>
 
 ## 🔗 相關
 

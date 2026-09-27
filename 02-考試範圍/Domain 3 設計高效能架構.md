@@ -116,12 +116,16 @@ updated: 2026-09-27
 4. CloudFront 與 Global Accelerator 的三個分界點？
 5. Athena 查詢又慢又貴，標準的三招優化是什麼？為什麼「換更大的 instance」是錯的？
 
-> [!success]- 參考答案
-> 1. **EBS**=區塊裝置、單一實例持久磁碟；**instance store**=主機本地區塊、暫存可重建；**EFS**=NFS、多台 Linux 跨 AZ 共享；**FSx**=託管檔案系統（Windows SMB / Lustre HPC / ONTAP 多協定）；**S3**=物件 API、靜態資產與資料湖。
-> 2. **運算** → 加機器有效；**資料庫寫入** → 垂直擴展或改 DynamoDB/分片；**資料庫讀取** → Read Replica 或 ElastiCache/DAX；**靜態內容頻寬** → CloudFront；**後端處理速度** → SQS 解耦 + worker ASG。
-> 3. **Data Streams**：`real-time`、`sub-second`、`multiple consumers`、`replay`。**Firehose**：`near real-time`、`deliver to S3/Redshift/OpenSearch`、`no administration`、`automatically scales`。
-> 4. **可快取的 HTTP → CloudFront**；**非 HTTP 協定 / 需要固定 anycast IP / 需要不受 DNS 快取影響的秒級切換 → Global Accelerator**。
-> 5. **列式格式（Parquet/ORC）+ 壓縮 + 分區**，因為 Athena **按掃描資料量計費**。「換更大 instance」錯在 **Athena 是無伺服器的，根本沒有 instance**（誘答套路：服務根本不支援）。
+<details>
+<summary>參考答案</summary>
+
+1. **EBS**=區塊裝置、單一實例持久磁碟；**instance store**=主機本地區塊、暫存可重建；**EFS**=NFS、多台 Linux 跨 AZ 共享；**FSx**=託管檔案系統（Windows SMB / Lustre HPC / ONTAP 多協定）；**S3**=物件 API、靜態資產與資料湖。
+2. **運算** → 加機器有效；**資料庫寫入** → 垂直擴展或改 DynamoDB/分片；**資料庫讀取** → Read Replica 或 ElastiCache/DAX；**靜態內容頻寬** → CloudFront；**後端處理速度** → SQS 解耦 + worker ASG。
+3. **Data Streams**：`real-time`、`sub-second`、`multiple consumers`、`replay`。**Firehose**：`near real-time`、`deliver to S3/Redshift/OpenSearch`、`no administration`、`automatically scales`。
+4. **可快取的 HTTP → CloudFront**；**非 HTTP 協定 / 需要固定 anycast IP / 需要不受 DNS 快取影響的秒級切換 → Global Accelerator**。
+5. **列式格式（Parquet/ORC）+ 壓縮 + 分區**，因為 Athena **按掃描資料量計費**。「換更大 instance」錯在 **Athena 是無伺服器的，根本沒有 instance**（誘答套路：服務根本不支援）。
+
+</details>
 
 ## 🔗 相關
 

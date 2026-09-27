@@ -73,12 +73,16 @@ SCP 限制 Organizations 帳號的**權限上限**，一般不直接授予權限
 4. SSE-KMS 加密的物件，讀取需要哪兩層授權？
 5. 有哪些選項一看到就可以直接排除？
 
-> [!success]- 參考答案
-> 1. `EC2 instance → instance profile → IAM role → STS 臨時憑證（經 metadata 服務）→ 簽署 AWS API 請求`。全程沒有長期金鑰。
-> 2. **① 網路通嗎**（DNS / route / endpoint）**② 身分與 bucket policy 允許 `s3:GetObject` 嗎 ③ 若是 SSE-KMS，KMS 權限夠嗎**。注意第一題的症狀是 timeout，後兩題是 403。
-> 3. **trust policy 決定「誰可以 assume 這個 role」**；**permissions policy 決定「assume 之後能做什麼」**。跨帳號時目標帳號要在 trust policy 信任來源 principal，**且**來源帳號的 IAM policy 要允許 `sts:AssumeRole`——只設一邊不會通。
-> 4. **`s3:GetObject`**（對 S3）與 **`kms:Decrypt`**（對該 CMK）。這是「網路通了還是 403」最常見的第三個原因。
-> 5. 把 **access key 放進程式碼 / 環境變數 / AMI / user data**；為終端使用者建 **IAM user**；用 **`AdministratorAccess`** 解決權限問題；給 EKS **節點** role 而不是給 Pod。
+<details>
+<summary>參考答案</summary>
+
+1. `EC2 instance → instance profile → IAM role → STS 臨時憑證（經 metadata 服務）→ 簽署 AWS API 請求`。全程沒有長期金鑰。
+2. **① 網路通嗎**（DNS / route / endpoint）**② 身分與 bucket policy 允許 `s3:GetObject` 嗎 ③ 若是 SSE-KMS，KMS 權限夠嗎**。注意第一題的症狀是 timeout，後兩題是 403。
+3. **trust policy 決定「誰可以 assume 這個 role」**；**permissions policy 決定「assume 之後能做什麼」**。跨帳號時目標帳號要在 trust policy 信任來源 principal，**且**來源帳號的 IAM policy 要允許 `sts:AssumeRole`——只設一邊不會通。
+4. **`s3:GetObject`**（對 S3）與 **`kms:Decrypt`**（對該 CMK）。這是「網路通了還是 403」最常見的第三個原因。
+5. 把 **access key 放進程式碼 / 環境變數 / AMI / user data**；為終端使用者建 **IAM user**；用 **`AdministratorAccess`** 解決權限問題；給 EKS **節點** role 而不是給 Pod。
+
+</details>
 
 ---
 

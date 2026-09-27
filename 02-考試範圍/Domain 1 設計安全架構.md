@@ -111,13 +111,17 @@ updated: 2026-09-27
 5. 跨 Region 複寫 SSE-KMS 加密的 S3 物件，為什麼常常失敗？
 6. 「連 root 都不能刪除的備份」有哪兩種實作？
 
-> [!success]- 參考答案
-> 1. **有效權限 = IAM policy ∩ SCP ∩ permission boundary ∩ resource policy**；**任何一層的 explicit Deny 直接否決**，沒有例外。預設是隱含拒絕。
-> 2. IAM identity policy → 資源 policy（bucket/key policy）→ VPC endpoint policy → SCP → **KMS 解密權限**。（**不查 route table**——那是 timeout 的症狀。）
-> 3. 員工 → **IAM Identity Center**（錯誤選項：每帳號建 IAM user）；App 使用者 → **Cognito**（錯誤選項：為每位使用者建 IAM user）；工作負載 → **IAM role + instance profile**（錯誤選項：把 access key 放進 user data/AMI）。
-> 4. GuardDuty=威脅行為偵測；Inspector=漏洞/CVE 掃描；Macie=S3 敏感資料發現；Security Hub=findings 彙整與合規計分；Detective=根因調查。
-> 5. **CMK 是 Region 專屬的**。複寫角色必須能在來源 Region `kms:Decrypt`、在目的地 Region `kms:Encrypt`；解法是授予兩邊金鑰權限或用 **multi-Region key**。
-> 6. **S3 Object Lock（Compliance mode）** 與 **AWS Backup Vault Lock（合規模式）**。Governance mode 允許特權使用者繞過，不符合。
+<details>
+<summary>參考答案</summary>
+
+1. **有效權限 = IAM policy ∩ SCP ∩ permission boundary ∩ resource policy**；**任何一層的 explicit Deny 直接否決**，沒有例外。預設是隱含拒絕。
+2. IAM identity policy → 資源 policy（bucket/key policy）→ VPC endpoint policy → SCP → **KMS 解密權限**。（**不查 route table**——那是 timeout 的症狀。）
+3. 員工 → **IAM Identity Center**（錯誤選項：每帳號建 IAM user）；App 使用者 → **Cognito**（錯誤選項：為每位使用者建 IAM user）；工作負載 → **IAM role + instance profile**（錯誤選項：把 access key 放進 user data/AMI）。
+4. GuardDuty=威脅行為偵測；Inspector=漏洞/CVE 掃描；Macie=S3 敏感資料發現；Security Hub=findings 彙整與合規計分；Detective=根因調查。
+5. **CMK 是 Region 專屬的**。複寫角色必須能在來源 Region `kms:Decrypt`、在目的地 Region `kms:Encrypt`；解法是授予兩邊金鑰權限或用 **multi-Region key**。
+6. **S3 Object Lock（Compliance mode）** 與 **AWS Backup Vault Lock（合規模式）**。Governance mode 允許特權使用者繞過，不符合。
+
+</details>
 
 ## 🔗 相關
 
