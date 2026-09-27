@@ -167,6 +167,7 @@ flowchart LR
 - [[決策樹 訊息與事件選型]] — SQS / SNS / EventBridge / Kinesis / Amazon MQ
 - [[決策樹 網路與連線選型]] — endpoint / Peering / TGW / PrivateLink / DX
 - [[常見陷阱與誘答選項識別]] — **直接值 5–10 分**
+- [[出題頻率校準]] — **684 題實測**：哪些服務真的常考、哪些是我原本高估的
 - [[數字與門檻速查]] — 考前 24 小時只讀這篇
 - [[情境題庫]] — 60 題附完整排除理由
 

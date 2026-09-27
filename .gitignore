@@ -2,3 +2,6 @@
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .trash/
+
+# 參考用的第三方教材（受版權保護，不得推上公開 repo）
+*.pdf
