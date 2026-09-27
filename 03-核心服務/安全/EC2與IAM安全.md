@@ -24,6 +24,42 @@ updated: 2026-09-27
 
 `EC2 instance → instance profile → IAM role 暫時憑證 → S3 API`。角色的 **trust policy** 決定誰可 assume，**permissions policy** 決定能做什麼；S3 bucket policy、SCP、VPC endpoint policy、KMS key policy 等也可能限制結果。網路可達與授權是兩道不同檢查。避免將長期 access key 放在 AMI、user data 或程式設定。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant EC2 as EC2 執行個體
+    participant IMDS as Instance Metadata
+    participant S3 as S3
+    participant KMS as KMS
+
+    EC2->>IMDS: 取得 instance profile 的憑證
+    IMDS-->>EC2: STS 臨時憑證（自動輪替，無長期金鑰）
+    EC2->>S3: GetObject（以臨時憑證簽章）
+
+    Note over S3: 依序檢查四層授權，任一層 Deny 就結束
+    S3->>S3: 1. SCP（Organizations 權限上限）
+    S3->>S3: 2. IAM identity policy 是否 Allow s3:GetObject
+    S3->>S3: 3. bucket policy（資源政策）
+    S3->>S3: 4. VPC endpoint policy
+
+    alt 任一層拒絕
+        S3--xEC2: 403 AccessDenied
+    else 四層通過，且物件為 SSE-KMS 加密
+        S3->>KMS: Decrypt（代呼叫者解 data key）
+        alt 呼叫者缺少 kms:Decrypt
+            KMS--xS3: 拒絕
+            S3--xEC2: 403 AccessDenied（第五層）
+        else 有 kms:Decrypt
+            KMS-->>S3: 明文 data key
+            S3-->>EC2: 200 + 物件內容
+        end
+    end
+```
+
+> [!danger] 這張圖解釋了「明明給了 s3:GetObject 卻還是 403」
+> **授權有五層，而第五層（KMS）最常被忘記。** 只要物件是 SSE-KMS 加密的，呼叫者就必須同時具備 `s3:GetObject` **與** `kms:Decrypt`。
+> 另外注意：**整張圖完全沒有網路元件**——網路不通的症狀是 **timeout**，不是 403。
+
 | 需求 | 常見工具 | 邊界 |
 |---|---|---|
 | EC2 呼叫 AWS API | IAM role + instance profile | 最小權限，必要時檢查 metadata 服務設定 |

@@ -16,7 +16,77 @@ updated: 2026-09-27
 ---
 # EC2與負載平衡及擴展
 
-`Route 53 → (可選 CloudFront/WAF) → ALB → Target group → 多 AZ Auto Scaling EC2 → RDS`。Launch template 定義 AMI、instance type、角色、SG 等；ASG 負責期望數量及擴縮，target group 連接負載平衡器並將健康的 instance 作目標。健康檢查路徑必須和應用一致。
+Launch template 定義 AMI、instance type、角色、SG 等；ASG 負責期望數量及擴縮，target group 連接負載平衡器並將健康的 instance 作目標。健康檢查路徑必須和應用一致。
+
+### 一個請求的完整生命週期
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 使用者
+    participant R53 as Route 53
+    participant CF as CloudFront + WAF
+    participant ALB as ALB
+    participant TG as Target Group
+    participant EC2 as EC2
+    participant RDS as RDS
+
+    U->>R53: 解析 shop.example.com
+    R53-->>U: Alias 記錄指向 CloudFront
+    Note over R53: 根網域只能用 Alias，不能用 CNAME
+
+    U->>CF: HTTPS 請求
+    Note over CF: TLS 在此終止（ACM 憑證須在 us-east-1）<br/>WAF 檢查 L7 規則：SQLi / XSS / rate limit
+
+    alt 可快取且命中
+        CF-->>U: 直接回傳，不回源
+    else 不可快取或 cache miss
+        CF->>ALB: 回源請求
+        Note over ALB: 依 path / host 選擇 target group
+        ALB->>TG: 只挑「健康」的目標
+        TG->>EC2: 轉送（EC2 的 SG 須放行 ALB 的 SG）
+        EC2->>RDS: 查詢（DB 的 SG 須放行 App 的 SG）
+        RDS-->>EC2: 結果
+        EC2-->>ALB: HTTP 回應
+        ALB-->>CF: 回應
+        CF-->>U: 回應並依 cache policy 決定是否快取
+    end
+```
+
+> [!note] 這張圖比箭頭字串多說了三件事
+> **① TLS 在哪裡終止**（CloudFront 或 ALB，決定憑證放哪個 Region）。
+> **② SG 是鏈狀引用的**：ALB SG → App SG → DB SG，每一段都要放行。
+> **③ 快取命中就不回源**——這是 CloudFront 降低 origin 負載與 egress 費用的來源。
+
+### 節點故障時發生什麼
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant ALB as ALB / Target Group
+    participant EC2 as 故障的 EC2
+    participant ASG as Auto Scaling Group
+    participant NEW as 替補 EC2
+
+    loop 每 interval 秒
+        ALB->>EC2: GET /actuator/health/readiness
+    end
+    EC2--xALB: 連續失敗達 unhealthy threshold
+    ALB->>ALB: 標記 unhealthy，停止導流
+
+    Note over ALB,ASG: ⚠️ 到此為止 ASG 完全不知情<br/>health check type 若是預設的 EC2，<br/>這台會一直佔著容量卻不服務
+
+    ASG->>ALB: 查詢目標健康狀態（僅當 type = ELB）
+    ALB-->>ASG: unhealthy
+    ASG->>EC2: 終止（lifecycle hook 可先擷取日誌）
+    ASG->>NEW: 依 launch template 啟動替補
+    NEW->>ALB: 註冊到 target group
+    ALB->>NEW: 通過健康檢查後才開始導流
+```
+
+> [!danger] 這張圖就是那個高頻考點
+> **ALB 只會「停止導流」，替換實例是 ASG 的職責**，而兩者的健康檢查是分開設定的。
+> ASG 的 health check type **預設是 `EC2`**（只看 instance status check），必須改成 **`ELB`** 才會依 target group 狀態替換。
 
 | 判斷 | ALB | NLB |
 |---|---|---|
